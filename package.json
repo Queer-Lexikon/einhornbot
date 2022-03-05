@@ -1,0 +1,16 @@
+{
+  "name": "qlbot",
+  "version": "1.0.0",
+  "description": "QL Matrix Bot",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "matrix-bot-sdk": "^0.6.0-beta.4",
+    "node-fetch": "^2.6.7",
+    "typescript": "^4.5.5"
+  }
+}
