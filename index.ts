@@ -49,6 +49,8 @@ AutojoinRoomsMixin.setupOnClient(client);
       seen(roomId, body.substring("!seen".length).trim());
     } else if (body.startsWith("!serveradmin")) {
       serveradmin(roomId, body.substring("!serveradmin".length).trim());
+    } else if (body.startsWith("!roomadmin")) {
+      roomadmin(roomId, body.substring("!roomadmin".length).trim());
     } else if (body.startsWith("!")) {
       commandNotFound(roomId);
     }
@@ -92,6 +94,7 @@ function help(roomId: string) {
       "!email <username>       - Shows the emails of a user",
       "!seen <username>        - Shows the seen of a user",
       "!serveradmin <username> - Toggles server admin of a user",
+      "!roomadmin <username>   - Sets the room admin role for a user",
     ].join("\n"),
   });
 }
@@ -180,7 +183,7 @@ async function invite(commandRoomId: string, username: string) {
   });
 }
 
-async function deactivate(roomId: string, username: string, deactivate: boolean) {
+async function deactivate(commandRoomId: string, username: string, deactivate: boolean) {
   logger.log((deactivate ? "Dea" : "A") + "ctivating user", username);
   try {
     let userid = '@' + username + ':' + config.servername;
@@ -191,7 +194,7 @@ async function deactivate(roomId: string, username: string, deactivate: boolean)
         headers: { 'Authorization': 'Bearer ' + config.accessToken }
       });
       if (resp.status !== 200) {
-        client.sendMessage(roomId, {
+        client.sendMessage(commandRoomId, {
           "msgtype": "m.notice",
           "body": "User " + username + " does not exist",
         });
@@ -200,7 +203,7 @@ async function deactivate(roomId: string, username: string, deactivate: boolean)
 
       let j: any = await resp.json();
       if (j.deactivated === deactivate) {
-        client.sendMessage(roomId, {
+        client.sendMessage(commandRoomId, {
           "msgtype": "m.notice",
           "body": "User " + username + " already " + (deactivate ? "de" : "") + "activated",
         });
@@ -216,13 +219,13 @@ async function deactivate(roomId: string, username: string, deactivate: boolean)
         body: JSON.stringify({ deactivated: deactivate }),
       });
       if (resp.status === 200) {
-        client.sendMessage(roomId, {
+        client.sendMessage(commandRoomId, {
           "msgtype": "m.notice",
           "body": "User " + username + " " + (deactivate ? "de" : "") + "activated",
         });
       } else {
         logger.error(await resp.text());
-        client.sendMessage(roomId, {
+        client.sendMessage(commandRoomId, {
           "msgtype": "m.notice",
           "body": "Failed to " + (deactivate ? "de" : "") + "activate user " + username,
         });
@@ -230,14 +233,14 @@ async function deactivate(roomId: string, username: string, deactivate: boolean)
     }
   } catch (error) {
     logger.error(error);
-    client.sendMessage(roomId, {
+    client.sendMessage(commandRoomId, {
       "msgtype": "m.notice",
       "body": "Error while " + (deactivate ? "de" : "") + "activating user " + username,
     });
   }
 }
 
-async function email(roomId: string, username: string) {
+async function email(commandRoomId: string, username: string) {
   logger.log('Fetching emails of', username);
   try {
     let userid = '@' + username + ':' + config.servername;
@@ -247,20 +250,20 @@ async function email(roomId: string, username: string) {
     let j: any = await resp.json();
     let emails = (j.threepids as any[]).filter(e => e.medium === 'email').map(e => e.address);
 
-    client.sendMessage(roomId, {
+    client.sendMessage(commandRoomId, {
       "msgtype": "m.notice",
       "body": "Emails of " + username + ": " + emails.join(', '),
     });
   } catch (error) {
     logger.error(error);
-    client.sendMessage(roomId, {
+    client.sendMessage(commandRoomId, {
       "msgtype": "m.notice",
       "body": "Error while fetching emails of " + username,
     });
   }
 }
 
-async function seen(roomId: string, username: string) {
+async function seen(commandRoomId: string, username: string) {
   logger.log('Fetching seen of', username);
   try {
     let userid = '@' + username + ':' + config.servername;
@@ -270,21 +273,21 @@ async function seen(roomId: string, username: string) {
     let j: any = await resp.json();
     let created = new Date(j.creation_ts * 1000);
 
-    client.sendMessage(roomId, {
+    client.sendMessage(commandRoomId, {
       "msgtype": "m.notice",
       "body": "Created user " + username + " on: " + created.toLocaleString(),
     });
   } catch (error) {
     logger.error(error);
-    client.sendMessage(roomId, {
+    client.sendMessage(commandRoomId, {
       "msgtype": "m.notice",
       "body": "Error while fetching seen of " + username,
     });
   }
 }
 
-async function serveradmin(roomId: string, username: string) {
-  logger.log('Fetching seen of', username);
+async function serveradmin(commandRoomId: string, username: string) {
+  logger.log('Toggling server admin of', username);
   try {
     let userid = '@' + username + ':' + config.servername;
     let resp = await fetch(config.homeserverUrl + '/_synapse/admin/v2/users/' + userid, {
@@ -300,13 +303,13 @@ async function serveradmin(roomId: string, username: string) {
         body: JSON.stringify({ admin: !j.admin }),
       });
       if (resp.status === 200) {
-        client.sendMessage(roomId, {
+        client.sendMessage(commandRoomId, {
           "msgtype": "m.notice",
           "body": "User " + username + " " + (j.admin ? "is no admin no more" : "is now admin"),
         });
       } else {
         logger.error(await resp.text());
-        client.sendMessage(roomId, {
+        client.sendMessage(commandRoomId, {
           "msgtype": "m.notice",
           "body": "Failed to toggle admin for user " + username,
         });
@@ -314,9 +317,39 @@ async function serveradmin(roomId: string, username: string) {
     }
   } catch (error) {
     logger.error(error);
-    client.sendMessage(roomId, {
+    client.sendMessage(commandRoomId, {
       "msgtype": "m.notice",
       "body": "Error while fetching seen of " + username,
     });
   }
+}
+
+async function roomadmin(commandRoomId: string, username: string) {
+  logger.log('Setting room admin for', username);
+  let userid = '@' + username + ':' + config.servername;
+
+  let success: string[] = [];
+  let failed: string[] = [];
+  for (let roomId in config.roomAdminRoomInclude) {
+    try {
+      let resp = await fetch(config.homeserverUrl + '/_synapse/admin/v1/rooms/' + roomId + '/make_room_admin', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + config.accessToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userid }),
+      });
+      if (resp.status === 200) {
+        success.push(config.roomAdminRoomInclude[roomId]);
+      } else {
+        logger.error(await resp.text());
+        failed.push(config.roomAdminRoomInclude[roomId]);
+      }
+    } catch (error) {
+      logger.error(error);
+      failed.push(config.roomAdminRoomInclude[roomId]);
+    }
+  }
+  client.sendMessage(commandRoomId, {
+    "msgtype": "m.notice",
+    "body": "Admin role set in rooms: " + success.join(", ") + (failed.length ? "\nFailed to set admin in: " + failed.join(", ") : ""),
+  });
 }

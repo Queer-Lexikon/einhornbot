@@ -18,4 +18,9 @@ export default {
   inviteRoomInclude: {
     '!someroom:example.com': 'Channel 1',
   },
+
+  //roomAdminRoomInclude
+  roomAdminRoomInclude: {
+    '!someroom:example.com': 'Channel 1',
+  },
 }
