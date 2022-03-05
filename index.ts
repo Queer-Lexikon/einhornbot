@@ -43,6 +43,8 @@ AutojoinRoomsMixin.setupOnClient(client);
       deactivate(roomId, body.substring("!deactivate".length).trim());
     } else if (body.startsWith("!email")) {
       email(roomId, body.substring("!email".length).trim());
+    } else if (body.startsWith("!seen")) {
+      seen(roomId, body.substring("!seen".length).trim());
     } else if (body.startsWith("!")) {
       commandNotFound(roomId);
     }
@@ -83,6 +85,7 @@ function help(roomId: string) {
       "!invite <username>     - Invotes the user to the channels",
       "!deactivate <username> - Deactivates a user",
       "!email <username>      - Shows the emails of a user",
+      "!seen <username>       - Shows the seen of a user",
     ].join("\n"),
   });
 }
@@ -247,6 +250,29 @@ async function email(roomId: string, username: string) {
     client.sendMessage(roomId, {
       "msgtype": "m.notice",
       "body": "Error while fetching emails of " + username,
+    });
+  }
+}
+
+async function seen(roomId: string, username: string) {
+  logger.log('Fetching seen of', username);
+  try {
+    let userid = '@' + username + ':' + config.servername;
+    let resp = await fetch(config.homeserverUrl + '/_synapse/admin/v2/users/' + userid, {
+      headers: { 'Authorization': 'Bearer ' + config.accessToken }
+    });
+    let j: any = await resp.json();
+    let created = new Date(j.creation_ts * 1000);
+
+    client.sendMessage(roomId, {
+      "msgtype": "m.notice",
+      "body": "Created user " + username + " on: " + created.toLocaleString(),
+    });
+  } catch (error) {
+    logger.error(error);
+    client.sendMessage(roomId, {
+      "msgtype": "m.notice",
+      "body": "Error while fetching seen of " + username,
     });
   }
 }
