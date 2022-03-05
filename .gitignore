@@ -1,0 +1,4 @@
+config.ts
+*.js
+package-lock.json
+bot.json
