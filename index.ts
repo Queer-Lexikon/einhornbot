@@ -1,109 +1,109 @@
-import { MatrixClient, SimpleFsStorageProvider, AutojoinRoomsMixin, RustSdkCryptoStorageProvider } from "matrix-bot-sdk";
+import { MatrixClient, SimpleFsStorageProvider, AutojoinRoomsMixin, RustSdkCryptoStorageProvider } from 'matrix-bot-sdk';
 import fetch from 'node-fetch';
 import Logger from './logger';
 import config from './config';
 
 const logger = new Logger();
 
-const storage = new SimpleFsStorageProvider("bot.json");
-// const cryptoStore = new RustSdkCryptoStorageProvider("encrypted");
+const storage = new SimpleFsStorageProvider('bot.json');
+// const cryptoStore = new RustSdkCryptoStorageProvider('encrypted');
 // const client = new MatrixClient(homeserverUrl, accessToken, storage, cryptoStore);
 const client = new MatrixClient(config.homeserverUrl, config.accessToken, storage);
 AutojoinRoomsMixin.setupOnClient(client);
 
 (async function () {
-  // client.on("room.event", (roomId, event) => {
+  // client.on('room.event', (roomId, event) => {
   //   console.log('Event in room ' + roomId, event);
   // });
-  client.on("room.message", (roomId: string, event: any) => {
-    if (!event["content"]) {
+  client.on('room.message', (roomId: string, event: any) => {
+    if (!event['content']) {
       return;
     }
     if (roomId !== config.commandRoomId) {
       return;
     }
-    const sender = event["sender"];
-    const body = event["content"]["body"] as string;
+    const sender = event['sender'];
+    const body = event['content']['body'] as string;
     logger.log(`[CHAT] ${sender}: ${body}`);
     if (sender === config.userId) {
       return;
     }
 
-    if (body.startsWith("!help")) {
+    if (body.startsWith('!help')) {
       help(roomId);
-    } else if (body.startsWith("!lock")) {
+    } else if (body.startsWith('!lock')) {
       lock(roomId);
-    } else if (body.startsWith("!lock")) {
+    } else if (body.startsWith('!lock')) {
       lock(roomId);
-    } else if (body.startsWith("!unlock")) {
+    } else if (body.startsWith('!unlock')) {
       unlock(roomId);
-    } else if (body.startsWith("!invite")) {
-      invite(roomId, body.substring("!invite".length).trim());
-    } else if (body.startsWith("!activate")) {
-      deactivate(roomId, body.substring("!activate".length).trim(), false);
-    } else if (body.startsWith("!deactivate")) {
-      deactivate(roomId, body.substring("!deactivate".length).trim(), true);
-    } else if (body.startsWith("!email")) {
-      email(roomId, body.substring("!email".length).trim());
-    } else if (body.startsWith("!seen")) {
-      seen(roomId, body.substring("!seen".length).trim());
-    } else if (body.startsWith("!serveradmin")) {
-      serveradmin(roomId, body.substring("!serveradmin".length).trim());
-    } else if (body.startsWith("!roomadmin")) {
-      roomadmin(roomId, body.substring("!roomadmin".length).trim());
-    } else if (body.startsWith("!")) {
+    } else if (body.startsWith('!invite')) {
+      invite(roomId, body.substring('!invite'.length).trim());
+    } else if (body.startsWith('!activate')) {
+      deactivate(roomId, body.substring('!activate'.length).trim(), false);
+    } else if (body.startsWith('!deactivate')) {
+      deactivate(roomId, body.substring('!deactivate'.length).trim(), true);
+    } else if (body.startsWith('!email')) {
+      email(roomId, body.substring('!email'.length).trim());
+    } else if (body.startsWith('!seen')) {
+      seen(roomId, body.substring('!seen'.length).trim());
+    } else if (body.startsWith('!serveradmin')) {
+      serveradmin(roomId, body.substring('!serveradmin'.length).trim());
+    } else if (body.startsWith('!roomadmin')) {
+      roomadmin(roomId, body.substring('!roomadmin'.length).trim());
+    } else if (body.startsWith('!')) {
       commandNotFound(roomId);
     }
   });
 
-  // client.on("room.join", (roomId, joinEvent) => {
+  // client.on('room.join', (roomId, joinEvent) => {
   //   console.log('join');
   //   console.log('roomid: ', roomId);
   //   console.log('event: ', joinEvent);
-  //   console.log(`Joined ${roomId} as ${joinEvent["state_key"]}`);
+  //   console.log(`Joined ${roomId} as ${joinEvent['state_key']}`);
   // });
 
-  // client.on("room.leave", (roomId, leaveEvent) => {
+  // client.on('room.leave', (roomId, leaveEvent) => {
   //   console.log('leave');
   //   console.log('roomid: ', roomId);
   //   console.log('event: ', leaveEvent);
-  //   console.log(`Left ${roomId} as ${leaveEvent["state_key"]}`);
+  //   console.log(`Left ${roomId} as ${leaveEvent['state_key']}`);
   // });
 
-  await client.start().then(() => logger.log("Client started!"));
+  await client.start().then(() => logger.log('Client started!'));
 })();
 
 function commandNotFound(roomId: string) {
   client.sendMessage(roomId, {
-    "msgtype": "m.notice",
-    "body": "Command not found. User !help for help",
+    'msgtype': 'm.notice',
+    'body': 'Command not found. User !help for help',
   });
 }
 
 function help(roomId: string) {
   client.sendMessage(roomId, {
-    "msgtype": "m.notice",
-    "body": [
-      "!help                   - Help",
-      "!echo <text>            - Echos the text",
-      "!lock                   - Locks the channels",
-      "!unlock                 - Unlocks the channels",
-      "!invite <username>      - Invotes the user to the channels",
-      "!activate <username>    - Activates a deactivated user",
-      "!deactivate <username>  - Deactivates a user",
-      "!email <username>       - Shows the emails of a user",
-      "!seen <username>        - Shows the seen of a user",
-      "!serveradmin <username> - Toggles server admin of a user",
-      "!roomadmin <username>   - Sets the room admin role for a user",
-    ].join("\n"),
+    'msgtype': 'm.notice',
+    'body': [
+      '!help                   - Help',
+      '!echo <text>            - Echos the text',
+      '!lock                   - Locks the channels',
+      '!unlock                 - Unlocks the channels',
+      '!invite <username>      - Invotes the user to the channels',
+      '!activate <username>    - Activates a deactivated user',
+      '!deactivate <username>  - Deactivates a user',
+      '!email <username>       - Shows the emails of a user',
+      '!seen <username>        - Shows the seen of a user',
+      '!serveradmin <username> - Toggles server admin of a user',
+      '!roomadmin <username>   - Sets the room admin role for a user',
+    ].join('\n'),
   });
 }
 
 function echo(roomId: string, command: string) {
-  const replyText = command.substring("!echo".length).trim();
+  const replyText = command.substring('!echo'.length).trim();
   client.sendMessage(roomId, {
-    "msgtype": "m.notice",
-    "body": replyText,
+    'msgtype': 'm.notice',
+    'body': replyText,
   });
 }
 
@@ -128,8 +128,8 @@ async function lock(commandRoomId: string) {
   }
 
   client.sendMessage(commandRoomId, {
-    "msgtype": "m.notice",
-    "body": "Rooms locked: " + locked.join(", ") + (failed.length ? "\nFailed to lock: " + failed.join(", ") : ""),
+    'msgtype': 'm.notice',
+    'body': 'Rooms locked: ' + locked.join(', ') + (failed.length ? '\nFailed to lock: ' + failed.join(', ') : ''),
   });
 }
 
@@ -154,8 +154,8 @@ async function unlock(commandRoomId: string) {
   }
 
   client.sendMessage(commandRoomId, {
-    "msgtype": "m.notice",
-    "body": "Rooms unlocked: " + unlocked.join(", ") + (failed.length ? "\nFailed to unlock: " + failed.join(", ") : ""),
+    'msgtype': 'm.notice',
+    'body': 'Rooms unlocked: ' + unlocked.join(', ') + (failed.length ? '\nFailed to unlock: ' + failed.join(', ') : ''),
   });
 }
 
@@ -178,13 +178,13 @@ async function invite(commandRoomId: string, username: string) {
   }
 
   client.sendMessage(commandRoomId, {
-    "msgtype": "m.notice",
-    "body": "Invited " + userid + " into rooms: " + invited.join(", ") + (failed.length ? "\nFailed to invite into: " + failed.join(", ") : ""),
+    'msgtype': 'm.notice',
+    'body': 'Invited ' + userid + ' into rooms: ' + invited.join(', ') + (failed.length ? '\nFailed to invite into: ' + failed.join(', ') : ''),
   });
 }
 
 async function deactivate(commandRoomId: string, username: string, deactivate: boolean) {
-  logger.log((deactivate ? "Dea" : "A") + "ctivating user", username);
+  logger.log((deactivate ? 'Dea' : 'A') + 'ctivating user', username);
   try {
     let userid = '@' + username + ':' + config.servername;
 
@@ -195,8 +195,8 @@ async function deactivate(commandRoomId: string, username: string, deactivate: b
       });
       if (resp.status !== 200) {
         client.sendMessage(commandRoomId, {
-          "msgtype": "m.notice",
-          "body": "User " + username + " does not exist",
+          'msgtype': 'm.notice',
+          'body': 'User ' + username + ' does not exist',
         });
         return;
       }
@@ -204,8 +204,8 @@ async function deactivate(commandRoomId: string, username: string, deactivate: b
       let j: any = await resp.json();
       if (j.deactivated === deactivate) {
         client.sendMessage(commandRoomId, {
-          "msgtype": "m.notice",
-          "body": "User " + username + " already " + (deactivate ? "de" : "") + "activated",
+          'msgtype': 'm.notice',
+          'body': 'User ' + username + ' already ' + (deactivate ? 'de' : '') + 'activated',
         });
         return;
       }
@@ -220,22 +220,22 @@ async function deactivate(commandRoomId: string, username: string, deactivate: b
       });
       if (resp.status === 200) {
         client.sendMessage(commandRoomId, {
-          "msgtype": "m.notice",
-          "body": "User " + username + " " + (deactivate ? "de" : "") + "activated",
+          'msgtype': 'm.notice',
+          'body': 'User ' + username + ' ' + (deactivate ? 'de' : '') + 'activated',
         });
       } else {
         logger.error(await resp.text());
         client.sendMessage(commandRoomId, {
-          "msgtype": "m.notice",
-          "body": "Failed to " + (deactivate ? "de" : "") + "activate user " + username,
+          'msgtype': 'm.notice',
+          'body': 'Failed to ' + (deactivate ? 'de' : '') + 'activate user ' + username,
         });
       }
     }
   } catch (error) {
     logger.error(error);
     client.sendMessage(commandRoomId, {
-      "msgtype": "m.notice",
-      "body": "Error while " + (deactivate ? "de" : "") + "activating user " + username,
+      'msgtype': 'm.notice',
+      'body': 'Error while ' + (deactivate ? 'de' : '') + 'activating user ' + username,
     });
   }
 }
@@ -251,14 +251,14 @@ async function email(commandRoomId: string, username: string) {
     let emails = (j.threepids as any[]).filter(e => e.medium === 'email').map(e => e.address);
 
     client.sendMessage(commandRoomId, {
-      "msgtype": "m.notice",
-      "body": "Emails of " + username + ": " + emails.join(', '),
+      'msgtype': 'm.notice',
+      'body': 'Emails of ' + username + ': ' + emails.join(', '),
     });
   } catch (error) {
     logger.error(error);
     client.sendMessage(commandRoomId, {
-      "msgtype": "m.notice",
-      "body": "Error while fetching emails of " + username,
+      'msgtype': 'm.notice',
+      'body': 'Error while fetching emails of ' + username,
     });
   }
 }
@@ -274,14 +274,14 @@ async function seen(commandRoomId: string, username: string) {
     let created = new Date(j.creation_ts * 1000);
 
     client.sendMessage(commandRoomId, {
-      "msgtype": "m.notice",
-      "body": "Created user " + username + " on: " + created.toLocaleString(),
+      'msgtype': 'm.notice',
+      'body': 'Created user ' + username + ' on: ' + created.toLocaleString(),
     });
   } catch (error) {
     logger.error(error);
     client.sendMessage(commandRoomId, {
-      "msgtype": "m.notice",
-      "body": "Error while fetching seen of " + username,
+      'msgtype': 'm.notice',
+      'body': 'Error while fetching seen of ' + username,
     });
   }
 }
@@ -304,22 +304,22 @@ async function serveradmin(commandRoomId: string, username: string) {
       });
       if (resp.status === 200) {
         client.sendMessage(commandRoomId, {
-          "msgtype": "m.notice",
-          "body": "User " + username + " " + (j.admin ? "is no admin no more" : "is now admin"),
+          'msgtype': 'm.notice',
+          'body': 'User ' + username + ' ' + (j.admin ? 'is no admin no more' : 'is now admin'),
         });
       } else {
         logger.error(await resp.text());
         client.sendMessage(commandRoomId, {
-          "msgtype": "m.notice",
-          "body": "Failed to toggle admin for user " + username,
+          'msgtype': 'm.notice',
+          'body': 'Failed to toggle admin for user ' + username,
         });
       }
     }
   } catch (error) {
     logger.error(error);
     client.sendMessage(commandRoomId, {
-      "msgtype": "m.notice",
-      "body": "Error while fetching seen of " + username,
+      'msgtype': 'm.notice',
+      'body': 'Error while fetching seen of ' + username,
     });
   }
 }
@@ -349,7 +349,7 @@ async function roomadmin(commandRoomId: string, username: string) {
     }
   }
   client.sendMessage(commandRoomId, {
-    "msgtype": "m.notice",
-    "body": "Admin role set in rooms: " + success.join(", ") + (failed.length ? "\nFailed to set admin in: " + failed.join(", ") : ""),
+    'msgtype': 'm.notice',
+    'body': 'Admin role set in rooms: ' + success.join(', ') + (failed.length ? '\nFailed to set admin in: ' + failed.join(', ') : ''),
   });
 }
