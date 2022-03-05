@@ -273,9 +273,31 @@ async function seen(commandRoomId: string, username: string) {
     let j: any = await resp.json();
     let created = new Date(j.creation_ts * 1000);
 
+    //last seen
+    let lastseen = 0;
+    {
+      //https://matrix-org.github.io/synapse/latest/admin_api/rooms.html#make-room-admin-api
+      let resp = await fetch(config.homeserverUrl + '/_synapse/admin/v2/users/' + userid + '/devices', {
+        headers: { 'Authorization': 'Bearer ' + config.accessToken }
+      });
+      let j: any = await resp.json();
+      lastseen = (j.devices as any[]).map(e => e.last_seen_ts).reduce((l, r) => Math.max(l, r), lastseen);
+
+      //https://matrix-org.github.io/synapse/latest/admin_api/user_admin_api.html#query-current-sessions-for-a-user
+      resp = await fetch(config.homeserverUrl + '/_matrix/client/r0/admin/whois/' + userid, {
+        headers: { 'Authorization': 'Bearer ' + config.accessToken }
+      });
+      j = await resp.json();
+      lastseen = (j.devices[''].sessions as any[])
+        .map(e => e.connections)
+        .reduce((l, r) => l.concat(r), [])
+        .map(e => e.last_seen)
+        .reduce((l, r) => Math.max(l, r), lastseen);
+    }
+
     client.sendMessage(commandRoomId, {
       'msgtype': 'm.notice',
-      'body': 'Created user ' + username + ' on: ' + created.toLocaleString(),
+      'body': 'Created user ' + username + ' on: ' + created.toLocaleString() + '\nLast seen: ' + (lastseen === 0 ? new Date(lastseen).toLocaleString() : 'unknown'),
     });
   } catch (error) {
     logger.error(error);
