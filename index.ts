@@ -39,8 +39,10 @@ AutojoinRoomsMixin.setupOnClient(client);
       unlock(roomId);
     } else if (body.startsWith("!invite")) {
       invite(roomId, body.substring("!invite".length).trim());
+    } else if (body.startsWith("!activate")) {
+      deactivate(roomId, body.substring("!activate".length).trim(), false);
     } else if (body.startsWith("!deactivate")) {
-      deactivate(roomId, body.substring("!deactivate".length).trim());
+      deactivate(roomId, body.substring("!deactivate".length).trim(), true);
     } else if (body.startsWith("!email")) {
       email(roomId, body.substring("!email".length).trim());
     } else if (body.startsWith("!seen")) {
@@ -83,6 +85,7 @@ function help(roomId: string) {
       "!lock                  - Locks the channels",
       "!unlock                - Unlocks the channels",
       "!invite <username>     - Invotes the user to the channels",
+      "!activate <username>   - Activates a deactivated user",
       "!deactivate <username> - Deactivates a user",
       "!email <username>      - Shows the emails of a user",
       "!seen <username>       - Shows the seen of a user",
@@ -174,7 +177,7 @@ async function invite(commandRoomId: string, username: string) {
   });
 }
 
-async function deactivate(roomId: string, username: string) {
+async function deactivate(roomId: string, username: string, deactivate: boolean) {
   logger.log('Fetching emails of', username);
   try {
     let userid = '@' + username + ':' + config.servername;
@@ -193,32 +196,32 @@ async function deactivate(roomId: string, username: string) {
       }
 
       let j: any = await resp.json();
-      if (j.deactivated) {
+      if (j.deactivated === deactivate) {
         client.sendMessage(roomId, {
           "msgtype": "m.notice",
-          "body": "User " + username + " already deactivated",
+          "body": "User " + username + " already " + (deactivate ? "de" : "") + "activated",
         });
         return;
       }
     }
 
-    //deactivate
+    //(de)activate
     {
       let resp = await fetch(config.homeserverUrl + '/_synapse/admin/v2/users/' + userid, {
         method: 'PUT',
         headers: { 'Authorization': 'Bearer ' + config.accessToken, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deactivated: true }),
+        body: JSON.stringify({ deactivated: deactivate }),
       });
       if (resp.status === 200) {
         client.sendMessage(roomId, {
           "msgtype": "m.notice",
-          "body": "User " + username + " deactivated",
+          "body": "User " + username + " " + (deactivate ? "de" : "") + "activated",
         });
       } else {
         logger.error(await resp.text());
         client.sendMessage(roomId, {
           "msgtype": "m.notice",
-          "body": "Failed to deactivate user " + username,
+          "body": "Failed to " + (deactivate ? "de" : "") + "activate user " + username,
         });
       }
     }
@@ -226,7 +229,7 @@ async function deactivate(roomId: string, username: string) {
     logger.error(error);
     client.sendMessage(roomId, {
       "msgtype": "m.notice",
-      "body": "Error while deactivating user " + username,
+      "body": "Error while " + (deactivate ? "de" : "") + "activating user " + username,
     });
   }
 }
