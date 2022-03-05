@@ -47,6 +47,8 @@ AutojoinRoomsMixin.setupOnClient(client);
       email(roomId, body.substring("!email".length).trim());
     } else if (body.startsWith("!seen")) {
       seen(roomId, body.substring("!seen".length).trim());
+    } else if (body.startsWith("!serveradmin")) {
+      serveradmin(roomId, body.substring("!serveradmin".length).trim());
     } else if (body.startsWith("!")) {
       commandNotFound(roomId);
     }
@@ -80,15 +82,16 @@ function help(roomId: string) {
   client.sendMessage(roomId, {
     "msgtype": "m.notice",
     "body": [
-      "!help                  - Help",
-      "!echo <text>           - Echos the text",
-      "!lock                  - Locks the channels",
-      "!unlock                - Unlocks the channels",
-      "!invite <username>     - Invotes the user to the channels",
-      "!activate <username>   - Activates a deactivated user",
-      "!deactivate <username> - Deactivates a user",
-      "!email <username>      - Shows the emails of a user",
-      "!seen <username>       - Shows the seen of a user",
+      "!help                   - Help",
+      "!echo <text>            - Echos the text",
+      "!lock                   - Locks the channels",
+      "!unlock                 - Unlocks the channels",
+      "!invite <username>      - Invotes the user to the channels",
+      "!activate <username>    - Activates a deactivated user",
+      "!deactivate <username>  - Deactivates a user",
+      "!email <username>       - Shows the emails of a user",
+      "!seen <username>        - Shows the seen of a user",
+      "!serveradmin <username> - Toggles server admin of a user",
     ].join("\n"),
   });
 }
@@ -178,7 +181,7 @@ async function invite(commandRoomId: string, username: string) {
 }
 
 async function deactivate(roomId: string, username: string, deactivate: boolean) {
-  logger.log('Fetching emails of', username);
+  logger.log((deactivate ? "Dea" : "A") + "ctivating user", username);
   try {
     let userid = '@' + username + ':' + config.servername;
 
@@ -271,6 +274,44 @@ async function seen(roomId: string, username: string) {
       "msgtype": "m.notice",
       "body": "Created user " + username + " on: " + created.toLocaleString(),
     });
+  } catch (error) {
+    logger.error(error);
+    client.sendMessage(roomId, {
+      "msgtype": "m.notice",
+      "body": "Error while fetching seen of " + username,
+    });
+  }
+}
+
+async function serveradmin(roomId: string, username: string) {
+  logger.log('Fetching seen of', username);
+  try {
+    let userid = '@' + username + ':' + config.servername;
+    let resp = await fetch(config.homeserverUrl + '/_synapse/admin/v2/users/' + userid, {
+      headers: { 'Authorization': 'Bearer ' + config.accessToken }
+    });
+    let j: any = await resp.json();
+
+    //toggle admin
+    {
+      let resp = await fetch(config.homeserverUrl + '/_synapse/admin/v2/users/' + userid, {
+        method: 'PUT',
+        headers: { 'Authorization': 'Bearer ' + config.accessToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ admin: !j.admin }),
+      });
+      if (resp.status === 200) {
+        client.sendMessage(roomId, {
+          "msgtype": "m.notice",
+          "body": "User " + username + " " + (j.admin ? "is no admin no more" : "is now admin"),
+        });
+      } else {
+        logger.error(await resp.text());
+        client.sendMessage(roomId, {
+          "msgtype": "m.notice",
+          "body": "Failed to toggle admin for user " + username,
+        });
+      }
+    }
   } catch (error) {
     logger.error(error);
     client.sendMessage(roomId, {
