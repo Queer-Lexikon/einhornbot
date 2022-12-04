@@ -2,6 +2,7 @@ import { MatrixClient, SimpleFsStorageProvider, AutojoinRoomsMixin, RustSdkCrypt
 import fetch from 'node-fetch';
 import Logger from './logger';
 import config from './config';
+import { ObjectFlags } from 'typescript';
 
 const logger = new Logger();
 
@@ -162,7 +163,19 @@ async function unlock(commandRoomId: string) {
 async function invite(commandRoomId: string, username: string) {
   let userid = '@' + username + ':' + config.servername;
   logger.log('Inviting', userid, 'into rooms');
+  
+  //check user exists
+  try {
+    let j = await getUser(userid);
+  } catch (error) {
+    client.sendMessage(commandRoomId, {
+      'msgtype': 'm.notice',
+      'body': 'User ' + userid + ' not found',
+    });
+    return;
+  }
 
+  //invite
   let invited: string[] = [];
   let failed: string[] = [];
   for (let roomId in config.inviteRoomInclude) {
@@ -244,10 +257,7 @@ async function email(commandRoomId: string, username: string) {
   logger.log('Fetching emails of', username);
   try {
     let userid = '@' + username + ':' + config.servername;
-    let resp = await fetch(config.homeserverUrl + '/_synapse/admin/v2/users/' + userid, {
-      headers: { 'Authorization': 'Bearer ' + config.accessToken }
-    });
-    let j: any = await resp.json();
+    let j = await getUser(userid);
     let emails = (j.threepids as any[]).filter(e => e.medium === 'email').map(e => e.address);
 
     client.sendMessage(commandRoomId, {
@@ -267,10 +277,7 @@ async function seen(commandRoomId: string, username: string) {
   logger.log('Fetching seen of', username);
   try {
     let userid = '@' + username + ':' + config.servername;
-    let resp = await fetch(config.homeserverUrl + '/_synapse/admin/v2/users/' + userid, {
-      headers: { 'Authorization': 'Bearer ' + config.accessToken }
-    });
-    let j: any = await resp.json();
+    let j = await getUser(userid);
     let created = new Date(j.creation_ts * 1000);
 
     //last seen
@@ -312,10 +319,7 @@ async function serveradmin(commandRoomId: string, username: string) {
   logger.log('Toggling server admin of', username);
   try {
     let userid = '@' + username + ':' + config.servername;
-    let resp = await fetch(config.homeserverUrl + '/_synapse/admin/v2/users/' + userid, {
-      headers: { 'Authorization': 'Bearer ' + config.accessToken }
-    });
-    let j: any = await resp.json();
+    let j = await getUser(userid);
 
     //toggle admin
     {
@@ -374,4 +378,14 @@ async function roomadmin(commandRoomId: string, username: string) {
     'msgtype': 'm.notice',
     'body': 'Admin role set in rooms: ' + success.join(', ') + (failed.length ? '\nFailed to set admin in: ' + failed.join(', ') : ''),
   });
+}
+
+
+//utils
+async function getUser(userid): Promise<any> {
+  let resp = await fetch(config.homeserverUrl + '/_synapse/admin/v2/users/' + userid, {
+    headers: { 'Authorization': 'Bearer ' + config.accessToken }
+  });
+  let j: any = await resp.json();
+  return j;
 }
