@@ -383,9 +383,17 @@ async function roomadmin(commandRoomId: string, username: string) {
 
 //utils
 async function getUser(userid): Promise<any> {
-  let resp = await fetch(config.homeserverUrl + '/_synapse/admin/v2/users/' + userid, {
+  let resp = await dofetch(config.homeserverUrl + '/_synapse/admin/v2/users/' + userid, {
     headers: { 'Authorization': 'Bearer ' + config.accessToken }
   });
   let j: any = await resp.json();
   return j;
+}
+
+function dofetch(url, opts): Promise<any> {
+  return fetch(url, opts).then(e => {
+    if (e.status !== 200 && e.status !== 204) {
+      throw new Error(e);
+    }
+  });
 }
