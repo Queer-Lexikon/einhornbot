@@ -395,5 +395,6 @@ function dofetch(url, opts): Promise<any> {
     if (e.status !== 200 && e.status !== 204) {
       throw new Error(e);
     }
+    return e;
   });
 }
