@@ -10,7 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "matrix-bot-sdk": "^0.6.0-beta.4",
-    "node-fetch": "^2.6.7",
+    "node-fetch": "^3.3.1",
     "typescript": "^4.5.5"
   }
 }
