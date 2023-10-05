@@ -3,7 +3,7 @@ einhornbot is a utility bot, based on [matrix-bot-sdk](https://github.com/turt2l
 
 ## Setup
 1. Copy config.sample.ts to config.ts
-2. Adjust necessary settings, as described in [the sample configuration](config.sample.ts)
+2. Adjust necessary settings, as described in [the sample configuration](config.example.ts)
 3. run ./build.sh
 4. Start the bot with ./run.sh
 
