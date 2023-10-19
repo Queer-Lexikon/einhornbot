@@ -1,7 +1,7 @@
 # einhornbot
 einhornbot is a utility bot, based on [matrix-bot-sdk](https://github.com/turt2live/matrix-bot-sdk), we use for moderation of our 2 chats, [Regenbogenchat](https://queer-lexikon.net/regenbogenchat/) and [Queerchat](https://queer-lexikon.net/queer-chat/)
 
-## Prerequuisites
+## Prerequisites
 - A user-account on the homeserver for the bot to use
 - A valid access token for said user (for example obtainable via Element in the Account settings)
   - Important: Do not log out with the user after obtaining that access token, otherwise it will be invalid.
