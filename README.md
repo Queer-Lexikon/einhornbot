@@ -1,6 +1,12 @@
 # einhornbot
 einhornbot is a utility bot, based on [matrix-bot-sdk](https://github.com/turt2live/matrix-bot-sdk), we use for moderation of our 2 chats, [Regenbogenchat](https://queer-lexikon.net/regenbogenchat/) and [Queerchat](https://queer-lexikon.net/queer-chat/)
 
+## Prerequuisites
+- A user-account on the homeserver for the bot to use
+- A valid access token for said user (for example obtainable via Element in the Account settings)
+  - Important: Do not log out with the user after obtaining that access token, otherwise it will be invalid.
+- [Disable Rate-Limit for that user via the admin API](https://matrix-org.github.io/synapse/latest/admin_api/user_admin_api.html#override-ratelimiting-for-users)
+
 ## Setup
 1. Copy config.sample.ts to config.ts
 2. Adjust necessary settings, as described in [the sample configuration](config.example.ts)
