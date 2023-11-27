@@ -1,10 +1,12 @@
-import { MatrixClient, SimpleFsStorageProvider, AutojoinRoomsMixin, RustSdkCryptoStorageProvider } from 'matrix-bot-sdk';
-import fetch from 'node-fetch';
+import {AutojoinRoomsMixin, MatrixClient, SimpleFsStorageProvider} from 'matrix-bot-sdk';
 import Logger from './logger';
-import config from './config';
-import { ObjectFlags } from 'typescript';
+import {User} from './types/synapse/User';
+import {DevicesResponse} from './types/synapse/Devices';
+import {WhoisResponse} from './types/matrix/Whois';
+import * as fs from 'fs';
 
 const logger = new Logger();
+const config = JSON.parse(fs.readFileSync('config.json').toString());
 
 const storage = new SimpleFsStorageProvider('bot.json');
 // const cryptoStore = new RustSdkCryptoStorageProvider('encrypted');
@@ -32,8 +34,8 @@ AutojoinRoomsMixin.setupOnClient(client);
 
     if (body.startsWith('!help')) {
       help(roomId);
-    } else if (body.startsWith('!lock')) {
-      lock(roomId);
+    } else if (body.startsWith('!echo')) {
+      echo(roomId, body.substring('!echo'.length).trim());
     } else if (body.startsWith('!lock')) {
       lock(roomId);
     } else if (body.startsWith('!unlock')) {
@@ -74,15 +76,15 @@ AutojoinRoomsMixin.setupOnClient(client);
   await client.start().then(() => logger.log('Client started!'));
 })();
 
-function commandNotFound(roomId: string) {
-  client.sendMessage(roomId, {
+async function commandNotFound(roomId: string) {
+  await client.sendMessage(roomId, {
     'msgtype': 'm.notice',
     'body': 'Command not found. User !help for help',
   });
 }
 
-function help(roomId: string) {
-  client.sendMessage(roomId, {
+async function help(roomId: string) {
+  await client.sendMessage(roomId, {
     'msgtype': 'm.notice',
     'body': [
       '!help                   - Help',
@@ -100,16 +102,16 @@ function help(roomId: string) {
   });
 }
 
-function echo(roomId: string, command: string) {
+async function echo(roomId: string, command: string) {
   const replyText = command.substring('!echo'.length).trim();
-  client.sendMessage(roomId, {
+  await client.sendMessage(roomId, {
     'msgtype': 'm.notice',
     'body': replyText,
   });
 }
 
 async function lock(commandRoomId: string) {
-  logger.log('Locking rooms')
+  logger.log('Locking rooms');
   let locked: string[] = [];
   let failed: string[] = [];
 
@@ -128,21 +130,21 @@ async function lock(commandRoomId: string) {
     }
   }
 
-  client.sendMessage(commandRoomId, {
+  await client.sendMessage(commandRoomId, {
     'msgtype': 'm.notice',
     'body': 'Rooms locked: ' + locked.join(', ') + (failed.length ? '\nFailed to lock: ' + failed.join(', ') : ''),
   });
 }
 
 async function unlock(commandRoomId: string) {
-  logger.log('Unlocking rooms')
+  logger.log('Unlocking rooms');
 
   let unlocked: string[] = [];
   let failed: string[] = [];
   for (let roomId in config.lockRoomInclude) {
     logger.log('Unlocking room:', roomId, config.lockRoomInclude[roomId]);
     try {
-      let resp = await client.getRoomStateEvent(roomId, 'm.room.power_levels', '')
+      let resp = await client.getRoomStateEvent(roomId, 'm.room.power_levels', '');
       resp.events['m.reaction'] = 0;
       resp.events_default = 0;
       await client.sendStateEvent(roomId, 'm.room.power_levels', '', resp);
@@ -154,7 +156,7 @@ async function unlock(commandRoomId: string) {
     }
   }
 
-  client.sendMessage(commandRoomId, {
+  await client.sendMessage(commandRoomId, {
     'msgtype': 'm.notice',
     'body': 'Rooms unlocked: ' + unlocked.join(', ') + (failed.length ? '\nFailed to unlock: ' + failed.join(', ') : ''),
   });
@@ -163,12 +165,12 @@ async function unlock(commandRoomId: string) {
 async function invite(commandRoomId: string, username: string) {
   let userid = '@' + username + ':' + config.servername;
   logger.log('Inviting', userid, 'into rooms');
-  
+
   //check user exists
   try {
-    let j = await getUser(userid);
+    await getUser(userid);
   } catch (error) {
-    client.sendMessage(commandRoomId, {
+    await client.sendMessage(commandRoomId, {
       'msgtype': 'm.notice',
       'body': 'User ' + userid + ' not found',
     });
@@ -179,7 +181,7 @@ async function invite(commandRoomId: string, username: string) {
   let invited: string[] = [];
   let failed: string[] = [];
   for (let roomId in config.inviteRoomInclude) {
-    logger.log('Inviting', userid, 'room: ', roomId, config.inviteRoomInclude[roomId])
+    logger.log('Inviting', userid, 'room: ', roomId, config.inviteRoomInclude[roomId]);
     try {
       await client.inviteUser(userid, roomId);
 
@@ -190,7 +192,7 @@ async function invite(commandRoomId: string, username: string) {
     }
   }
 
-  client.sendMessage(commandRoomId, {
+  await client.sendMessage(commandRoomId, {
     'msgtype': 'm.notice',
     'body': 'Invited ' + userid + ' into rooms: ' + invited.join(', ') + (failed.length ? '\nFailed to invite into: ' + failed.join(', ') : ''),
   });
@@ -204,10 +206,10 @@ async function deactivate(commandRoomId: string, username: string, deactivate: b
     //check if account exists
     {
       let resp = await fetch(config.homeserverUrl + '/_synapse/admin/v2/users/' + userid, {
-        headers: { 'Authorization': 'Bearer ' + config.accessToken }
+        headers: {'Authorization': 'Bearer ' + config.accessToken},
       });
       if (resp.status !== 200) {
-        client.sendMessage(commandRoomId, {
+        await client.sendMessage(commandRoomId, {
           'msgtype': 'm.notice',
           'body': 'User ' + username + ' does not exist',
         });
@@ -216,7 +218,7 @@ async function deactivate(commandRoomId: string, username: string, deactivate: b
 
       let j: any = await resp.json();
       if (j.deactivated === deactivate) {
-        client.sendMessage(commandRoomId, {
+        await client.sendMessage(commandRoomId, {
           'msgtype': 'm.notice',
           'body': 'User ' + username + ' already ' + (deactivate ? 'de' : '') + 'activated',
         });
@@ -228,17 +230,17 @@ async function deactivate(commandRoomId: string, username: string, deactivate: b
     {
       let resp = await fetch(config.homeserverUrl + '/_synapse/admin/v2/users/' + userid, {
         method: 'PUT',
-        headers: { 'Authorization': 'Bearer ' + config.accessToken, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deactivated: deactivate }),
+        headers: {'Authorization': 'Bearer ' + config.accessToken, 'Content-Type': 'application/json'},
+        body: JSON.stringify({deactivated: deactivate}),
       });
       if (resp.status === 200) {
-        client.sendMessage(commandRoomId, {
+        await client.sendMessage(commandRoomId, {
           'msgtype': 'm.notice',
           'body': 'User ' + username + ' ' + (deactivate ? 'de' : '') + 'activated',
         });
       } else {
         logger.error(await resp.text());
-        client.sendMessage(commandRoomId, {
+        await client.sendMessage(commandRoomId, {
           'msgtype': 'm.notice',
           'body': 'Failed to ' + (deactivate ? 'de' : '') + 'activate user ' + username,
         });
@@ -246,7 +248,7 @@ async function deactivate(commandRoomId: string, username: string, deactivate: b
     }
   } catch (error) {
     logger.error(error);
-    client.sendMessage(commandRoomId, {
+    await client.sendMessage(commandRoomId, {
       'msgtype': 'm.notice',
       'body': 'Error while ' + (deactivate ? 'de' : '') + 'activating user ' + username,
     });
@@ -258,15 +260,15 @@ async function email(commandRoomId: string, username: string) {
   try {
     let userid = '@' + username + ':' + config.servername;
     let j = await getUser(userid);
-    let emails = (j.threepids as any[]).filter(e => e.medium === 'email').map(e => e.address);
+    let emails = j.threepids.filter(e => e.medium === 'email').map(e => e.address);
 
-    client.sendMessage(commandRoomId, {
+    await client.sendMessage(commandRoomId, {
       'msgtype': 'm.notice',
       'body': 'Emails of ' + username + ': ' + emails.join(', '),
     });
   } catch (error) {
     logger.error(error);
-    client.sendMessage(commandRoomId, {
+    await client.sendMessage(commandRoomId, {
       'msgtype': 'm.notice',
       'body': 'Error while fetching emails of ' + username,
     });
@@ -285,30 +287,31 @@ async function seen(commandRoomId: string, username: string) {
     {
       //https://matrix-org.github.io/synapse/latest/admin_api/rooms.html#make-room-admin-api
       let resp = await fetch(config.homeserverUrl + '/_synapse/admin/v2/users/' + userid + '/devices', {
-        headers: { 'Authorization': 'Bearer ' + config.accessToken }
+        headers: {'Authorization': 'Bearer ' + config.accessToken},
       });
-      let j: any = await resp.json();
-      lastseen = (j.devices as any[]).map(e => e.last_seen_ts).reduce((l, r) => Math.max(l, r), lastseen);
+      let devicesResponse = await resp.json() as DevicesResponse;
+      lastseen = (devicesResponse.devices).map(e => e.last_seen_ts).reduce((l, r) => Math.max(l, r), lastseen);
 
       //https://matrix-org.github.io/synapse/latest/admin_api/user_admin_api.html#query-current-sessions-for-a-user
       resp = await fetch(config.homeserverUrl + '/_matrix/client/r0/admin/whois/' + userid, {
-        headers: { 'Authorization': 'Bearer ' + config.accessToken }
+        headers: {'Authorization': 'Bearer ' + config.accessToken},
       });
-      j = await resp.json();
-      lastseen = (j.devices[''].sessions as any[])
+      let whoisResponse = await resp.json() as WhoisResponse;
+      lastseen = (whoisResponse.devices[''].sessions)
         .map(e => e.connections)
         .reduce((l, r) => l.concat(r), [])
         .map(e => e.last_seen)
         .reduce((l, r) => Math.max(l, r), lastseen);
     }
 
-    client.sendMessage(commandRoomId, {
+    await client.sendMessage(commandRoomId, {
       'msgtype': 'm.notice',
-      'body': 'Created user ' + username + ' on: ' + created.toLocaleString() + '\nLast seen: ' + (lastseen === 0 ? new Date(lastseen).toLocaleString() : 'unknown'),
+      'body': 'Created user ' + username + ' on: ' + created.toLocaleString()
+        + '\nLast seen: ' + (lastseen === 0 ? new Date(lastseen).toLocaleString() : 'unknown'),
     });
   } catch (error) {
     logger.error(error);
-    client.sendMessage(commandRoomId, {
+    await client.sendMessage(commandRoomId, {
       'msgtype': 'm.notice',
       'body': 'Error while fetching seen of ' + username,
     });
@@ -325,17 +328,17 @@ async function serveradmin(commandRoomId: string, username: string) {
     {
       let resp = await fetch(config.homeserverUrl + '/_synapse/admin/v2/users/' + userid, {
         method: 'PUT',
-        headers: { 'Authorization': 'Bearer ' + config.accessToken, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ admin: !j.admin }),
+        headers: {'Authorization': 'Bearer ' + config.accessToken, 'Content-Type': 'application/json'},
+        body: JSON.stringify({admin: !j.admin}),
       });
       if (resp.status === 200) {
-        client.sendMessage(commandRoomId, {
+        await client.sendMessage(commandRoomId, {
           'msgtype': 'm.notice',
           'body': 'User ' + username + ' ' + (j.admin ? 'is no admin no more' : 'is now admin'),
         });
       } else {
         logger.error(await resp.text());
-        client.sendMessage(commandRoomId, {
+        await client.sendMessage(commandRoomId, {
           'msgtype': 'm.notice',
           'body': 'Failed to toggle admin for user ' + username,
         });
@@ -343,7 +346,7 @@ async function serveradmin(commandRoomId: string, username: string) {
     }
   } catch (error) {
     logger.error(error);
-    client.sendMessage(commandRoomId, {
+    await client.sendMessage(commandRoomId, {
       'msgtype': 'm.notice',
       'body': 'Error while fetching seen of ' + username,
     });
@@ -360,8 +363,8 @@ async function roomadmin(commandRoomId: string, username: string) {
     try {
       let resp = await fetch(config.homeserverUrl + '/_synapse/admin/v1/rooms/' + roomId + '/make_room_admin', {
         method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + config.accessToken, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userid }),
+        headers: {'Authorization': 'Bearer ' + config.accessToken, 'Content-Type': 'application/json'},
+        body: JSON.stringify({user_id: userid}),
       });
       if (resp.status === 200) {
         success.push(config.roomAdminRoomInclude[roomId]);
@@ -374,7 +377,7 @@ async function roomadmin(commandRoomId: string, username: string) {
       failed.push(config.roomAdminRoomInclude[roomId]);
     }
   }
-  client.sendMessage(commandRoomId, {
+  await client.sendMessage(commandRoomId, {
     'msgtype': 'm.notice',
     'body': 'Admin role set in rooms: ' + success.join(', ') + (failed.length ? '\nFailed to set admin in: ' + failed.join(', ') : ''),
   });
@@ -382,16 +385,15 @@ async function roomadmin(commandRoomId: string, username: string) {
 
 
 //utils
-async function getUser(userid): Promise<any> {
+async function getUser(userid: string): Promise<User> {
   userid = userid.replace('/', '%2F');
-  let resp = await dofetch(config.homeserverUrl + '/_synapse/admin/v2/users/' + userid, {
-    headers: { 'Authorization': 'Bearer ' + config.accessToken }
+  let resp = await doFetch(config.homeserverUrl + '/_synapse/admin/v2/users/' + userid, {
+    headers: {'Authorization': 'Bearer ' + config.accessToken},
   });
-  let j: any = await resp.json();
-  return j;
+  return await resp.json();
 }
 
-function dofetch(url, opts): Promise<any> {
+function doFetch(url: string, opts: RequestInit): Promise<any> {
   return fetch(url, opts).then(e => {
     if (e.status !== 200 && e.status !== 204) {
       throw new Error(e.status + ': ' + e.body);

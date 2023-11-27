@@ -1,0 +1,26 @@
+{
+  "homeserverUrl_comment": "no slash at the end",
+  "homeserverUrl": "https://matrix.example.com",
+  "servername": "example.com",
+  "userId_comment": "the userID the bot should use",
+  "userId": "@user:example.com",
+  "accessToken_comment": "a valid access token for that user",
+  "accessToken": "<token>",
+
+  "commandRoomId_comment": "room for commands, must be unencrypted",
+  "commandRoomId": "!channelid:example.com",
+
+  "lockLevel_comment": "power level to set send messages and add reactions for the given channels",
+  "lockLevel": 50,
+  "lockRoomInclude": {
+    "!someroom:example.com": "Channel 1"
+  },
+
+  "inviteRoomInclude": {
+    "!someroom:example.com": "Channel 1"
+  },
+
+  "roomAdminRoomInclude": {
+    "!someroom:example.com": "Channel 1"
+  }
+}

@@ -4,13 +4,26 @@
   "description": "QL Matrix Bot",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "run-p dev:1 dev:2",
+    "dev:1": "tsc --watch --preserveWatchOutput -p tsconfig.dev.json",
+    "dev:2": "wait-on dev/index.js && nodemon -q --watch dev/ dev/index.js",
+    "build": "run-s type-check build-only copy-dist-files",
+    "build-only": "tsc",
+    "type-check": "tsc --noEmit --composite false",
+    "copy-dist-files": "run-s copy-dist-files:config.json copy-dist-files:start.sh",
+    "copy-dist-files:config.json": "cp -n config.json dist || true",
+    "copy-dist-files:start.sh": "echo -e '#!/bin/bash\ncd \"$(dirname \"$0\")\"\nnode index.js\n' > dist/start.sh && chmod +x dist/start.sh",
+    "run": "./dist/start.sh"
   },
-  "author": "",
+  "author": "wea_ondara",
   "license": "ISC",
   "dependencies": {
-    "matrix-bot-sdk": "^0.6.0-beta.4",
-    "node-fetch": "^2.6.7",
-    "typescript": "^4.5.5"
+    "matrix-bot-sdk": "^0.6.0-beta.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.2.2",
+    "wait-on": "^7.2.0"
   }
 }
