@@ -1,5 +1,5 @@
-# einhornbot
-einhornbot is a utility bot, based on [matrix-bot-sdk](https://github.com/turt2live/matrix-bot-sdk), we use for moderation of our 2 chats, [Regenbogenchat](https://queer-lexikon.net/regenbogenchat/) and [Queerchat](https://queer-lexikon.net/queer-chat/)
+# Einhornbot [![Node.js CI](https://github.com/Queer-Lexikon/einhornbot/actions/workflows/node.js.yml/badge.svg)](https://github.com/Queer-Lexikon/einhornbot/actions/workflows/node.js.yml)
+Einhornbot is a utility bot, based on [matrix-bot-sdk](https://github.com/turt2live/matrix-bot-sdk), we use for moderation of our 2 chats, [Regenbogenchat](https://queer-lexikon.net/regenbogenchat/) and [Queerchat](https://queer-lexikon.net/queer-chat/)
 
 ## Prerequisites
 - A user-account on the homeserver for the bot to use
