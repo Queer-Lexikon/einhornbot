@@ -1,6 +1,5 @@
 dev/
 dist/
-package-lock.json
 bot.json
 node_modules/
 .idea/
