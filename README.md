@@ -1,5 +1,5 @@
-# einhornbot
-einhornbot is a utility bot, based on [matrix-bot-sdk](https://github.com/turt2live/matrix-bot-sdk), we use for moderation of our 2 chats, [Regenbogenchat](https://queer-lexikon.net/regenbogenchat/) and [Queerchat](https://queer-lexikon.net/queer-chat/)
+# Einhornbot [![Node.js CI](https://github.com/Queer-Lexikon/einhornbot/actions/workflows/node.js.yml/badge.svg)](https://github.com/Queer-Lexikon/einhornbot/actions/workflows/node.js.yml)
+Einhornbot is a utility bot, based on [matrix-bot-sdk](https://github.com/turt2live/matrix-bot-sdk), we use for moderation of our 2 chats, [Regenbogenchat](https://queer-lexikon.net/regenbogenchat/) and [Queerchat](https://queer-lexikon.net/queer-chat/)
 
 ## Prerequisites
 - A user-account on the homeserver for the bot to use
@@ -8,10 +8,9 @@ einhornbot is a utility bot, based on [matrix-bot-sdk](https://github.com/turt2l
 - [Disable Rate-Limit for that user via the admin API](https://matrix-org.github.io/synapse/latest/admin_api/user_admin_api.html#override-ratelimiting-for-users)
 
 ## Setup
-1. Copy config.sample.ts to config.ts
-2. Adjust necessary settings, as described in [the sample configuration](config.example.ts)
-3. run ./build.sh
-4. Start the bot with ./run.sh
+1. Run `npm i && npm run build`
+2. Configure the `dist/config.json`
+3. Start the bot with `npm run run` or `./dist/start.sh`
 
 ## Usage
 In your command channel, send in the command you want to use. See [Commands](#Commands) for a list of valid commands and what they do.
@@ -21,6 +20,9 @@ Commands are all prefixed with `!`. Arguments in `<>` are required arguments
 
 #### `!help`
 Displays all available commands
+
+#### `!echo`
+Echos the command parameters
 
 #### `!lock`
 Sets the required power level for sending messages and sending reactions to `lockLevel` for the rooms specified in `lockRoomInclude` in your config.

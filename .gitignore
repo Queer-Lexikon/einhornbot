@@ -1,5 +1,5 @@
-config.ts
-*.js
-package-lock.json
+dev/
+dist/
 bot.json
 node_modules/
+.idea/
